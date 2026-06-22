@@ -33,6 +33,10 @@ loginDataAllow = [
     username: "veenschinese@gmail.com",
     password: "canis@system",
   },
+  {
+    username: "testingMax@gmail.com",
+    password: "max@testing",
+  },
 ];
 
 // Pug setup
