@@ -1,9 +1,14 @@
 const express = require("express");
 const session = require("express-session");
 const bodyParser = require("body-parser");
+const { dbconnection } = require("./db");
 const { main } = require("./index2");
+const Prediction = require("./models/Prediction");
+const Users = require("./models/users");
 
 const app = express();
+
+dbconnection();
 
 app.use(bodyParser.urlencoded({ extended: true }));
 
@@ -49,8 +54,26 @@ async function refreshData() {
     const data = await main();
 
     if (data) {
-      latestData = data;
+      latestData = data.dashboard;
       // console.log(`Dashboard updated: ${new Date().toLocaleTimeString()}`);
+      await Prediction.findOneAndUpdate(
+        {
+          date: new Date().toISOString().slice(0, 10),
+        },
+        {
+          date: new Date().toISOString().slice(0, 10),
+
+          today: data.todayPrediction,
+
+          tomorrow: data.tomorrowPrediction,
+
+          updatedAt: new Date(),
+        },
+        {
+          upsert: true,
+          returnDocument: "after",
+        },
+      );
     }
   } catch (err) {
     console.error("Refresh Error:", err);
@@ -69,14 +92,16 @@ app.get("/login", (req, res) => {
   });
 });
 
-app.post("/login", (req, res) => {
+app.post("/login", async (req, res) => {
   const { username, password } = req.body;
 
-  const user = loginDataAllow.find(
-    (u) => u.username === username && u.password === password,
-  );
+  const userInDB = await Users.findOne({ username });
 
-  if (!user) {
+  if (
+    !userInDB ||
+    userInDB.password !== password ||
+    userInDB.username !== username
+  ) {
     return res.render("login", {
       error: "Invalid username or password",
     });
@@ -106,8 +131,21 @@ app.get("/", checkAuth, (req, res) => {
   });
 });
 // API for frontend refresh
-app.get("/api/dashboard", checkAuth, (req, res) => {
-  res.json(latestData);
+// app.get("/api/dashboard", checkAuth, (req, res) => {
+//   res.json(latestData);
+// });
+
+app.get("/api/dashboard", checkAuth, async (req, res) => {
+  const today = new Date().toISOString().slice(0, 10);
+
+  const prediction = await Prediction.findOne({ date: today });
+  const userInDB = await Users.findOne({ username: req.session.username }).lean();
+
+  res.json({
+    dashboard: latestData,
+    prediction,
+    isShowPrediction: userInDB.isShowPrediction,
+  });
 });
 
 // Start server

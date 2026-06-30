@@ -2,6 +2,7 @@ const YahooFinance = require("yahoo-finance2").default;
 const axios = require("axios");
 const SunCalc = require("suncalc");
 const sweph = require("sweph");
+const Prediction = require("./models/Prediction");
 let latestData = [];
 
 const yahooFinance = new YahooFinance({
@@ -159,7 +160,14 @@ exports.main = async () => {
   // Rank by performance
   results.sort((a, b) => b.changePercent - a.changePercent);
 
-  const astro = await getNakshatraData();
+  const today = new Date();
+
+  const tomorrow = new Date(today);
+  tomorrow.setDate(tomorrow.getDate() + 1);
+
+  const astroToday = await getNakshatraData(today);
+
+  const astroTomorrow = await getNakshatraData(tomorrow);
 
   const finalData = results.map((row, index) => {
     let technicalScore = 0;
@@ -218,19 +226,19 @@ exports.main = async () => {
                       ? row.gannM180.toFixed(2)
                       : row.gann90.toFixed(2);
 
-    const combinedScore = technicalScore + astro.astroScore;
+    const combinedScore = technicalScore + astroToday.astroScore;
 
     const signal = getSignal({
       direction: row.direction,
       position: row.position,
-      astroScore: astro.astroScore,
+      astroScore: astroToday.astroScore,
       changePercent: row.changePercent,
     });
 
     const trader = getTraderAction({
       direction: row.direction,
       position: row.position,
-      astroScore: astro.astroScore,
+      astroScore: astroToday.astroScore,
       changePercent: row.changePercent,
       rank: index + 1,
     });
@@ -259,8 +267,8 @@ exports.main = async () => {
       Strength: row.strength,
       Direction: row.direction,
       Rank: index + 1,
-      N_Bias: astro.bias,
-      A_Score: astro.astroScore,
+      N_Bias: astroToday.bias,
+      A_Score: astroToday.astroScore,
       CombinedScore: combinedScore,
       Signal: signal,
       // Action: trader.action,
@@ -268,11 +276,86 @@ exports.main = async () => {
     };
   });
 
+  // =======================
+  // Prediction Engine
+  // =======================
+
+  const bullish = finalData.filter((x) => x.Direction === "Bullish");
+
+  const bearish = finalData.filter((x) => x.Direction === "Bearish");
+
+  const bullishScore = bullish.reduce((t, x) => t + Number(x.CombinedScore), 0);
+
+  const bearishScore = bearish.reduce(
+    (t, x) => t + Math.abs(Number(x.CombinedScore)),
+    0,
+  );
+
+  const sortedToday = [...finalData].sort(
+    (a, b) => b.CombinedScore - a.CombinedScore,
+  );
+
+  const todayPrediction = {
+    bestSector: sortedToday[0],
+
+    worstSector: sortedToday[sortedToday.length - 1],
+
+    top5: sortedToday.slice(0, 5),
+
+    bottom5: sortedToday.slice(-5).reverse(),
+  };
+
+  // tomorrow prediction engine
+  const historyMap = await buildSectorHistoryMap();
+
+  const astroDelta = astroTomorrow.astroScore - astroToday.astroScore;
+
+  const tomorrowRows = finalData.map((row, index) => {
+    const prob = getProbability(row.Sector, historyMap);
+
+    const momentum = Number(row.CombinedScore);
+
+    const directionBias = prob.bullishProb > prob.bearishProb ? 1 : -1;
+
+    const probabilityStrength = Math.abs(prob.bullishProb - prob.bearishProb);
+
+    const adjustedScore =
+      momentum * 0.5 +
+      astroDelta * 0.2 +
+      directionBias * probabilityStrength * 30 +
+      (finalData.length - index) * 0.5;
+
+    return {
+      ...row,
+      CombinedScore: adjustedScore,
+      N_Bias: astroTomorrow.bias,
+      A_Score: astroTomorrow.astroScore,
+    };
+  });
+
+  tomorrowRows.sort((a, b) => b.CombinedScore - a.CombinedScore);
+
+  const tomorrowPrediction = {
+    bestSector: tomorrowRows[0],
+
+    worstSector: tomorrowRows[tomorrowRows.length - 1],
+
+    top5: tomorrowRows.slice(0, 5),
+
+    bottom5: tomorrowRows.slice(-5).reverse(),
+  };
+
   // console.table(finalData);
 
   // latestData = finalData;
 
-  return finalData;
+  return {
+    dashboard: finalData,
+
+    todayPrediction,
+
+    tomorrowPrediction,
+  };
 
   // const topBuys = finalData
   //   .filter((x) => x.Signal === "STRONG BUY")
@@ -293,9 +376,9 @@ exports.main = async () => {
   //   console.log(JSON.stringify(finalData, null, 2));
 };
 
-async function getNakshatraData() {
+async function getNakshatraData(date = new Date()) {
   try {
-    const now = new Date();
+    const now = date;
 
     const startTime = now.toISOString().replace("T", " ").substring(0, 16);
 
@@ -704,6 +787,44 @@ async function getAstroTradingDataKal(
       },
     );
   });
+}
+
+async function buildSectorHistoryMap() {
+  const all = await Prediction.find({});
+
+  const map = {};
+
+  all.forEach((doc) => {
+    const sectors = doc.today.top5.concat(doc.today.bottom5);
+
+    sectors.forEach((s) => {
+      if (!map[s.Sector]) {
+        map[s.Sector] = {
+          count: 0,
+          bullish: 0,
+          bearish: 0,
+        };
+      }
+
+      map[s.Sector].count += 1;
+
+      if (s.Direction === "Bullish") map[s.Sector].bullish += 1;
+      else map[s.Sector].bearish += 1;
+    });
+  });
+
+  return map;
+}
+
+function getProbability(sector, historyMap) {
+  const data = historyMap[sector] || { bullish: 1, bearish: 1 };
+
+  const total = data.bullish + data.bearish;
+
+  return {
+    bullishProb: data.bullish / total,
+    bearishProb: data.bearish / total,
+  };
 }
 
 // setInterval(async () => {

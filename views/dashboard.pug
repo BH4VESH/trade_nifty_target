@@ -12,6 +12,7 @@ html
       table {
         width: 100%;
         border-collapse: collapse;
+        margin-bottom: 30px;
       }
 
       th {
@@ -32,17 +33,19 @@ html
       .bearish {
         background: #f8d7da;
       }
+
       .header {
         display: flex;
         justify-content: space-between;
         align-items: center;
         margin-bottom: 20px;
       }
-     .logout-btn {
+
+      .logout-btn {
         background: #dc2626;
         color: white;
         text-decoration: none;
-        padding: 1px 20px 1px 20px;
+        padding: 6px 20px;
         border-radius: 6px;
         margin-left: 15px;
       }
@@ -51,15 +54,19 @@ html
         background: #b91c1c;
       }
 
+      h3{
+        margin-top:30px;
+      }
+
   body
 
-  .header
-  .left
-    h2 Trading Dashboard
+    .header
+      .left
+        h2 Trading Dashboard
 
-  .right
-    span Welcome #{username}
-    a.logout-btn(href="/logout") Logout
+      .right
+        span Welcome #{username}
+        a.logout-btn(href="/logout") Logout
 
     table#dashboard
       thead
@@ -76,65 +83,167 @@ html
           th Strength
           th Target
           th Direction
-          th Bot-Direction
-          th Bot-Score
+          th Bot Direction
+          th Bot Score
           th Combined Score
           th Signal
 
       tbody
 
+    div#PredictionSection
+      h3 Today's Prediction
+
+        table
+          thead
+            tr
+              th Type
+              th Sector
+              th Signal
+              th Score
+
+          tbody
+            tr
+              td Best Sector
+              td#todayBest Loading...
+              td#todayBestSignal Loading...
+              td#todayBestScore Loading...
+
+            tr
+              td Worst Sector
+              td#todayWorst Loading...
+              td#todayWorstSignal Loading...
+              td#todayWorstScore Loading...
+
+ 
+      h3 Tomorrow's Prediction
+        table
+          thead
+            tr
+              th Type
+              th Sector
+              th Signal
+              th Score
+
+          tbody
+            tr
+              td Best Sector
+              td#tomorrowBest Loading...
+              td#tomorrowBestSignal Loading...
+              td#tomorrowBestScore Loading...
+
+            tr
+              td Worst Sector
+              td#tomorrowWorst Loading...
+              td#tomorrowWorstSignal Loading...
+              td#tomorrowWorstScore Loading...
+
     script.
+
       async function loadData() {
 
-        const response =
-          await fetch('/api/dashboard');
+        try {
 
-        const data =
-          await response.json();
+          const response = await fetch('/api/dashboard');
+          const result = await response.json();
 
-        const tbody =
-          document.querySelector(
-            '#dashboard tbody'
-          );
+          const data = result.dashboard;
+          const today = result.prediction ? result.prediction.today : null;
+          const tomorrow = result.prediction ? result.prediction.tomorrow : null;
+          const isShowPrediction = result.isShowPrediction ?? false;
 
-        tbody.innerHTML = '';
+          const tbody = document.querySelector('#dashboard tbody');
+          const section = document.getElementById('PredictionSection');
 
-        data.forEach(row => {
+          if (!isShowPrediction) {
+          section.style.display = 'none';
+          } 
 
-          const tr =
-            document.createElement('tr');
+          tbody.innerHTML = '';
 
-          tr.className =
-            row.Direction === 'Bullish'
+          data.forEach(row => {
+
+            const tr = document.createElement('tr');
+
+            tr.className =
+              row.Direction === 'Bullish'
               ? 'bullish'
               : 'bearish';
 
-          tr.innerHTML = `
-            <td>${row.Rank}</td>
-            <td>${row.Sector}</td>
-            <td>${row.LivePrice}</td>
-            <td>${row.DailyOpen}</td>
-            <td>${row.Gann90}</td>
-            <td>${row.Gann180}</td>
-            <td>${row.Gann270}</td>
-            <td>${row.Gann360}</td>
-            <td>${row.Position}</td>
-            <td>${row.Strength}</td>
-            <td>${row.Target}</td>
-            <td>${row.Direction}</td>
-            <td>${row.N_Bias}</td>
-            <td>${row.A_Score}</td>
-            <td>${row.CombinedScore}</td>
-            <td>${row.Signal}</td>
-          `;
+            tr.innerHTML = `
+              <td>${row.Rank}</td>
+              <td>${row.Sector}</td>
+              <td>${row.LivePrice}</td>
+              <td>${row.DailyOpen}</td>
+              <td>${row.Gann90}</td>
+              <td>${row.Gann180}</td>
+              <td>${row.Gann270}</td>
+              <td>${row.Gann360}</td>
+              <td>${row.Position}</td>
+              <td>${row.Strength}</td>
+              <td>${row.Target}</td>
+              <td>${row.Direction}</td>
+              <td>${row.N_Bias}</td>
+              <td>${row.A_Score}</td>
+              <td>${row.CombinedScore}</td>
+              <td>${row.Signal}</td>
+            `;
 
-          tbody.appendChild(tr);
-        });
+            tbody.appendChild(tr);
+
+          });
+
+          if(today){
+
+            document.getElementById("todayBest").innerHTML =
+              today.bestSector?.Sector || "-";
+
+            document.getElementById("todayBestSignal").innerHTML =
+              today.bestSector?.Signal || "-";
+
+            document.getElementById("todayBestScore").innerHTML =
+              today.bestSector?.CombinedScore ?? "-";
+
+            document.getElementById("todayWorst").innerHTML =
+              today.worstSector?.Sector || "-";
+
+            document.getElementById("todayWorstSignal").innerHTML =
+              today.worstSector?.Signal || "-";
+
+            document.getElementById("todayWorstScore").innerHTML =
+              today.worstSector?.CombinedScore ?? "-";
+
+          }
+
+          if(tomorrow){
+
+            document.getElementById("tomorrowBest").innerHTML =
+              tomorrow.bestSector?.Sector || "-";
+
+            document.getElementById("tomorrowBestSignal").innerHTML =
+              tomorrow.bestSector?.Signal || "-";
+
+            document.getElementById("tomorrowBestScore").innerHTML =
+              tomorrow.bestSector?.CombinedScore ?? "-";
+
+            document.getElementById("tomorrowWorst").innerHTML =
+              tomorrow.worstSector?.Sector || "-";
+
+            document.getElementById("tomorrowWorstSignal").innerHTML =
+              tomorrow.worstSector?.Signal || "-";
+
+            document.getElementById("tomorrowWorstScore").innerHTML =
+              tomorrow.worstSector?.CombinedScore ?? "-";
+
+          }
+
+        } catch(err){
+
+          console.error(err);
+
+        }
+
       }
 
       loadData();
 
-      setInterval(
-        loadData,
-        20000
-      );
+      setInterval(loadData,20000);
