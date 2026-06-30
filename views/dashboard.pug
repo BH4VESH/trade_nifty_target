@@ -58,6 +58,10 @@ html
         margin-top:30px;
       }
 
+      #PredictionSection {
+        display: none;
+      }
+
   body
 
     .header
@@ -154,9 +158,9 @@ html
           const tbody = document.querySelector('#dashboard tbody');
           const section = document.getElementById('PredictionSection');
 
-          if (!isShowPrediction) {
-          section.style.display = 'none';
-          } 
+          if (isShowPrediction) {
+          section.style.display = "block";
+          }
 
           tbody.innerHTML = '';
 
