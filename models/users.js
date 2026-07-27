@@ -21,6 +21,10 @@ const usersSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    activeSessionId: {
+      type: String,
+      default: null,
+    },
   },
   {
     timestamps: true,

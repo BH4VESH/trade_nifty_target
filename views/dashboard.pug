@@ -163,6 +163,13 @@ html
         try {
 
           const response = await fetch('/api/dashboard');
+
+          // Session expired or logged in elsewhere
+          if (response.status === 401) {
+          //- alert("Your account has been logged in from another device.");
+          window.location.replace("/login");
+          return;
+          }
           const result = await response.json();
 
           const data = result.dashboard;

@@ -97,11 +97,7 @@ app.post("/login", async (req, res) => {
 
   const userInDB = await Users.findOne({ username });
 
-  if (
-    !userInDB ||
-    userInDB.password !== password ||
-    userInDB.username !== username
-  ) {
+  if (!userInDB || userInDB.password !== password) {
     return res.render("login", {
       error: "Invalid username or password",
     });
@@ -110,15 +106,22 @@ app.post("/login", async (req, res) => {
   req.session.loggedIn = true;
   req.session.username = username;
 
+  // Save current session ID
+  userInDB.activeSessionId = req.sessionID;
+  await userInDB.save();
+
   res.redirect("/");
 });
 
-app.get("/logout", (req, res) => {
-  req.session.destroy((err) => {
-    if (err) {
-      return res.redirect("/");
-    }
+app.get("/logout", async (req, res) => {
+  if (req.session.username) {
+    await Users.updateOne(
+      { username: req.session.username },
+      { $unset: { activeSessionId: "" } },
+    );
+  }
 
+  req.session.destroy(() => {
     res.clearCookie("connect.sid");
     res.redirect("/login");
   });
@@ -209,10 +212,35 @@ app.listen(7000, () => {
   console.log("Dashboard running at http://localhost:7000");
 });
 
-function checkAuth(req, res, next) {
-  if (req.session.loggedIn) {
-    return next();
+async function checkAuth(req, res, next) {
+  if (!req.session.loggedIn) {
+    return res.redirect("/login");
   }
 
-  res.redirect("/login");
+  const user = await Users.findOne({
+    username: req.session.username,
+  });
+
+  if (!user) {
+    return res.redirect("/login");
+  }
+
+  // Another login happened
+  if (user.activeSessionId !== req.sessionID) {
+    req.session.destroy(() => {
+      res.clearCookie("connect.sid");
+
+      if (req.originalUrl.startsWith("/api/")) {
+        return res.status(401).json({
+          message: "Logged in from another device",
+        });
+      }
+
+      return res.redirect("/login");
+    });
+
+    return;
+  }
+
+  next();
 }
