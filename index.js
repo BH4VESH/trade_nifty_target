@@ -179,13 +179,17 @@ app.post("/add-user", checkAuth, async (req, res) => {
   const { username, password, canCreateUser, isShowPrediction } = req.body;
 
   if (!username || !password) {
-    return res.status(400).send("All fields are required.");
+    return res.render("register", {
+      error: "All fields are required.",
+    });
   }
 
   const exists = await Users.findOne({ username });
 
   if (exists) {
-    return res.send("Username already exists");
+    return res.render("register", {
+      error: "Username already exists",
+    });
   }
 
   // const hash = await bcrypt.hash(password, 10);
