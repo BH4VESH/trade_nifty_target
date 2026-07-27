@@ -54,6 +54,19 @@ html
         background: #b91c1c;
       }
 
+      .add-user-btn {
+        background: #30b6d8;
+        color: white;
+        text-decoration: none;
+        padding: 6px 20px;
+        border-radius: 6px;
+        margin-left: 15px;
+      }
+
+      .add-user-btn:hover {
+        background: #3c97ad;
+      }
+
       h3{
         margin-top:30px;
       }
@@ -71,6 +84,8 @@ html
       .right
         span Welcome #{username}
         a.logout-btn(href="/logout") Logout
+        if canCreateUser
+          a.add-user-btn(href="/add-user") Add User
 
     table#dashboard
       thead

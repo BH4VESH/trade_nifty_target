@@ -1,6 +1,5 @@
 const mongoose = require("mongoose");
 
-
 const usersSchema = new mongoose.Schema(
   {
     username: {
@@ -14,9 +13,17 @@ const usersSchema = new mongoose.Schema(
       unique: true,
       required: true,
     },
+    canCreateUser: {
+      type: Boolean,
+      default: false,
+    },
+    isShowPrediction: {
+      type: Boolean,
+      default: false,
+    },
   },
   {
-    date: true,
+    timestamps: true,
     versionKey: false,
   },
 );

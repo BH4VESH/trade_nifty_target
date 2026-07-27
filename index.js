@@ -125,9 +125,13 @@ app.get("/logout", (req, res) => {
 });
 
 // Dashboard page
-app.get("/", checkAuth, (req, res) => {
+app.get("/", checkAuth, async (req, res) => {
+  const userInDB = await Users.findOne({
+    username: req.session.username,
+  }).lean();
   res.render("dashboard", {
     username: req.session.username,
+    canCreateUser: userInDB.canCreateUser,
   });
 });
 // API for frontend refresh
@@ -139,13 +143,61 @@ app.get("/api/dashboard", checkAuth, async (req, res) => {
   const today = new Date().toISOString().slice(0, 10);
 
   const prediction = await Prediction.findOne({ date: today });
-  const userInDB = await Users.findOne({ username: req.session.username }).lean();
+  const userInDB = await Users.findOne({
+    username: req.session.username,
+  }).lean();
 
   res.json({
     dashboard: latestData,
     prediction,
     isShowPrediction: userInDB.isShowPrediction,
   });
+});
+
+app.get("/add-user", checkAuth, async (req, res) => {
+  const user = await Users.findOne({
+    username: req.session.username,
+  }).lean();
+
+  if (!user || !user.canCreateUser) {
+    return res.status(403).send("Access Denied");
+  }
+
+  res.render("register");
+});
+
+// const bcrypt = require("bcrypt");
+
+app.post("/add-user", checkAuth, async (req, res) => {
+  const currentUser = await Users.findOne({
+    username: req.session.username,
+  }).lean();
+  if (!currentUser || !currentUser.canCreateUser) {
+    return res.status(403).send("Access Denied");
+  }
+
+  const { username, password, canCreateUser, isShowPrediction } = req.body;
+
+  if (!username || !password) {
+    return res.status(400).send("All fields are required.");
+  }
+
+  const exists = await Users.findOne({ username });
+
+  if (exists) {
+    return res.send("Username already exists");
+  }
+
+  // const hash = await bcrypt.hash(password, 10);
+
+  await Users.create({
+    username,
+    password,
+    canCreateUser: canCreateUser === "on",
+    isShowPrediction: isShowPrediction === "on",
+  });
+
+  res.redirect("/");
 });
 
 // Start server
