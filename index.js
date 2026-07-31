@@ -3,8 +3,10 @@ const session = require("express-session");
 const bodyParser = require("body-parser");
 const { dbconnection } = require("./db");
 const { main } = require("./index2");
+const { mainStok } = require("./service/stockAnalysis");
 const Prediction = require("./models/Prediction");
 const Users = require("./models/users");
+const StockPrediction = require("./models/StockPrediction");
 
 const app = express();
 
@@ -52,6 +54,7 @@ app.set("views", "./views");
 async function refreshData() {
   try {
     const data = await main();
+    await mainStok();
 
     if (data) {
       latestData = data.dashboard;
@@ -155,6 +158,82 @@ app.get("/api/dashboard", checkAuth, async (req, res) => {
     prediction,
     isShowPrediction: userInDB.isShowPrediction,
   });
+});
+
+app.get("/api/dashboard/getStockData", checkAuth, async (req, res) => {
+  try {
+    const today = new Date().toISOString().slice(0, 10);
+
+    const date = req.query.date || today;
+    const sector = req.query.sector || "ALL";
+    const view = req.query.view || "TOP10";
+
+    const stockPrediction = await StockPrediction.findOne({ date }).lean();
+
+    if (!stockPrediction) {
+      return res.json({
+        stocks: [],
+        sectors: [],
+      });
+    }
+
+    const sectors = [
+      "ALL",
+      ...new Set(stockPrediction.stocks.map((x) => x.Sector)),
+    ];
+
+    let stocks = [...stockPrediction.stocks];
+
+    // Sector Filter
+    if (sector !== "ALL") {
+      stocks = stocks.filter((x) => x.Sector === sector);
+    }
+
+    // Highest score first
+    stocks.sort((a, b) => b.CombinedScore - a.CombinedScore);
+
+    switch (view.toUpperCase()) {
+      case "TOP5":
+        stocks = stocks.slice(0, 5);
+        break;
+
+      case "TOP10":
+        stocks = stocks.slice(0, 10);
+        break;
+
+      case "TOP20":
+        stocks = stocks.slice(0, 20);
+        break;
+
+      case "BOTTOM5":
+        stocks = stocks.slice(-5).reverse();
+        break;
+
+      case "BOTTOM10":
+        stocks = stocks.slice(-10).reverse();
+        break;
+
+      case "ALL":
+      default:
+        break;
+    }
+
+
+    res.json({
+      date,
+      sector,
+      view,
+      total: stocks.length,
+      sectors,
+      stocks,
+    });
+  } catch (err) {
+    console.error(err);
+
+    res.status(500).json({
+      message: err.message,
+    });
+  }
 });
 
 app.get("/add-user", checkAuth, async (req, res) => {

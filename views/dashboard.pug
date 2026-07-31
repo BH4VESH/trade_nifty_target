@@ -75,6 +75,86 @@ html
         display: none;
       }
 
+      //- stok css
+      .filters {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          flex-wrap: nowrap;      /* Keep all controls in one row */
+          margin: 20px 0;
+          overflow-x: auto;       /* Scroll horizontally if screen is small */
+          padding-bottom: 5px;
+      }
+
+      .filters {
+          display: flex;
+          align-items: center;
+      }
+
+      .filters > * {
+          margin-right: 12px;
+      }
+
+      .filters > *:last-child {
+          margin-right: 0;
+      }
+      
+      .filters input[type="date"],
+      .filters select {
+          width: 180px;
+          min-width: 180px;
+          height: 42px;
+          padding: 0 12px;
+          border: 1px solid #ccc;
+          border-radius: 6px;
+          font-size: 14px;
+          background: #fff;
+      }
+      
+      .filters button {
+          min-width: 120px;
+          height: 42px;
+          padding: 0 20px;
+          border: none;
+          border-radius: 6px;
+          background: #457bcc;
+          color: #fff;
+          font-weight: 600;
+          cursor: pointer;
+      }
+      
+      .filters button:hover {
+          background: #1c69db;
+      }
+
+      .table-container {
+          width: 100%;
+          max-height: 700px;      /* About 20 rows */
+          overflow-y: auto;
+          overflow-x: auto;
+          border: 1px solid #ddd;
+      }
+
+      #stockTable {
+          width: 100%;
+          border-collapse: collapse;
+      }
+
+      #stockTable thead th {
+          position: sticky;
+          top: 0;
+          background: #222;
+          color: #fff;
+          z-index: 10;
+      }
+
+      #stockTable th,
+      #stockTable td {
+          padding: 8px 12px;
+          border: 1px solid #ddd;
+          white-space: nowrap;
+      }
+
   body
 
     .header
@@ -109,7 +189,47 @@ html
 
       tbody
 
+      hr
+
     div#PredictionSection
+      h2 Stock Analysis
+
+      .filters
+        input(type="date" id="stockDate")
+
+        select#stockSector
+          option(value="ALL") All Sectors
+
+        select#stockView
+          option(value="TOP5") Top 5
+          option(value="TOP10") Top 10
+          option(value="TOP20") Top 20
+          option(value="BOTTOM5") Bottom 5
+          option(value="BOTTOM10") Bottom 10
+          option(value="ALL") All
+
+        button(onclick="loadStocks()") Search
+      hr
+      .table-container
+        table#stockTable
+          thead
+            tr
+              th Rank
+              th Sector
+              th Company
+              th Live
+              th Open
+              th G90
+              th G180
+              th G270
+              th G360
+              th Position
+              th Strength
+              th Direction
+              th Score
+              th Signal
+          tbody
+
       h3 Today's Prediction
 
         table
@@ -269,7 +389,74 @@ html
         }
 
       }
+      async function loadStocks() {
+        try {
+          const date =
+            document.getElementById("stockDate").value ||
+            new Date().toISOString().slice(0, 10);
 
+          const sector = document.getElementById("stockSector").value || "ALL";
+
+          const view = document.getElementById("stockView").value || "TOP10";
+
+          const res = await fetch(
+            `/api/dashboard/getStockData?date=${date}&sector=${encodeURIComponent(
+              sector
+            )}&view=${view}`
+          );
+
+          const json = await res.json();
+
+          const sectorSelect = document.getElementById("stockSector");
+
+          if (sectorSelect.options.length <= 1) {
+            sectorSelect.innerHTML = "";
+
+            json.sectors.forEach((sector) => {
+              const option = document.createElement("option");
+              option.value = sector;
+              option.textContent = sector;
+              sectorSelect.appendChild(option);
+            });
+          }
+
+
+          const tbody = document.querySelector("#stockTable tbody");
+
+          tbody.innerHTML = "";
+
+          json.stocks.forEach((stock) => {
+            const tr = document.createElement("tr");
+
+            tr.className =
+              stock.Direction === "Bullish" ? "bullish" : "bearish";
+
+            tr.innerHTML = `
+              <td>${stock.Rank}</td>
+              <td>${stock.Sector}</td>
+              <td>${stock.Company}</td>
+              <td>${stock.LivePrice}</td>
+              <td>${stock.DailyOpen}</td>
+              <td>${stock.Gann90}</td>
+              <td>${stock.Gann180}</td>
+              <td>${stock.Gann270}</td>
+              <td>${stock.Gann360}</td>
+              <td>${stock.Position}</td>
+              <td>${stock.Strength}</td>
+              <td>${stock.Direction}</td>
+              <td>${stock.CombinedScore}</td>
+              <td>${stock.Signal}</td>
+            `;
+
+            tbody.appendChild(tr);
+          });
+        } catch (err) {
+          console.error(err);
+        }
+      }
+    
       loadData();
+      loadStocks();
 
       setInterval(loadData,20000);
+      setInterval(loadStocks,20000);
