@@ -7,6 +7,7 @@ const { mainStok } = require("./service/stockAnalysis");
 const Prediction = require("./models/Prediction");
 const Users = require("./models/users");
 const StockPrediction = require("./models/StockPrediction");
+const StockModel = require("./models/stock");
 
 const app = express();
 
@@ -26,25 +27,6 @@ app.use(
 );
 
 let latestData = [];
-
-loginDataAllow = [
-  {
-    username: "bhavesh",
-    password: "bhavesh@narola",
-  },
-  {
-    username: "ravivalva007@gmail.com",
-    password: "valva@007",
-  },
-  {
-    username: "veenschinese@gmail.com",
-    password: "canis@system",
-  },
-  {
-    username: "testingMax@gmail.com",
-    password: "max@testing",
-  },
-];
 
 // Pug setup
 app.set("view engine", "pug");
@@ -218,7 +200,6 @@ app.get("/api/dashboard/getStockData", checkAuth, async (req, res) => {
         break;
     }
 
-
     res.json({
       date,
       sector,
@@ -284,6 +265,62 @@ app.post("/add-user", checkAuth, async (req, res) => {
   });
 
   res.redirect("/");
+});
+
+app.get("/add-stock", checkAuth, async (req, res) => {
+  const user = await Users.findOne({
+    username: req.session.username,
+  }).lean();
+
+  if (!user || !user.canCreateUser) {
+    return res.status(403).send("Access Denied");
+  }
+
+  res.render("stoke");
+});
+
+app.post("/add-stock", checkAuth, async (req, res) => {
+  try {
+    const currentUser = await Users.findOne({
+      username: req.session.username,
+    }).lean();
+
+    if (!currentUser || !currentUser.canCreateUser) {
+      return res.status(403).send("Access Denied");
+    }
+
+    const { sector, Stock } = req.body;
+
+    if (!sector || !Stock) {
+      return res.render("add-stock", {
+        error: "Sector and stock are required.",
+      });
+    }
+
+    const stock = Stock.trim().toUpperCase();
+
+    await StockModel.findOneAndUpdate(
+      { sector: sector },
+      {
+        $addToSet: {
+          stocks: stock,
+        },
+      },
+      {
+        upsert: true,
+        returnDocument: "after",
+        setDefaultsOnInsert: true,
+      },
+    );
+
+    return res.redirect("/");
+  } catch (error) {
+    console.error("Add Stock Error:", error);
+
+    return res.status(500).render("add-stock", {
+      error: "Internal server error.",
+    });
+  }
 });
 
 // Start server

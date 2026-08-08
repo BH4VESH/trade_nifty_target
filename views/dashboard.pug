@@ -66,6 +66,18 @@ html
       .add-user-btn:hover {
         background: #3c97ad;
       }
+      .add-stock-btn {
+        background: #266cc9;
+        color: white;
+        text-decoration: none;
+        padding: 6px 20px;
+        border-radius: 6px;
+        margin-left: 15px;
+      }
+
+      .add-stock-btn:hover {
+         background: #084494;
+      }
 
       h3{
         margin-top:30px;
@@ -166,6 +178,7 @@ html
         a.logout-btn(href="/logout") Logout
         if canCreateUser
           a.add-user-btn(href="/add-user") Add User
+          a.add-stock-btn(href="/add-stock") Add Stock
 
     table#dashboard
       thead

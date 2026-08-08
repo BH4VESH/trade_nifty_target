@@ -4,23 +4,12 @@ const SunCalc = require("suncalc");
 const sweph = require("sweph");
 // const Prediction = require("./models/Prediction");
 const StockPrediction = require("../models/StockPrediction");
-const sectorStocks = require("./sectorStocks");
+const StockModel = require("../models/stock");
 let latestData = [];
 
 const yahooFinance = new YahooFinance({
   suppressNotices: ["yahooSurvey"],
 });
-
-const stocks = [];
-
-for (const [sector, symbols] of Object.entries(sectorStocks)) {
-  for (const symbol of symbols) {
-    stocks.push({
-      sector,
-      symbol,
-    });
-  }
-}
 
 const durMuhurat = {
   0: [14],
@@ -157,6 +146,21 @@ async function getSectorData(item) {
 
 exports.mainStok = async () => {
   // console.log("\nFetching market data...\n");
+
+  const sectors = await StockModel.find(
+    {},
+    {
+      sector: 1,
+      stocks: 1,
+    },
+  ).lean();
+
+  const stocks = sectors.flatMap((sector) =>
+    sector.stocks.map((symbol) => ({
+      sector: sector.sector,
+      symbol,
+    })),
+  );
 
   const results = (await Promise.all(stocks.map(getSectorData))).filter(
     Boolean,

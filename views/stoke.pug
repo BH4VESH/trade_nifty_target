@@ -1,0 +1,193 @@
+doctype html
+html
+  head
+    title Add stock
+
+    meta(charset="UTF-8")
+    meta(name="viewport" content="width=device-width, initial-scale=1.0")
+
+    style.
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+        font-family: Arial, sans-serif;
+      }
+
+      body {
+        min-height: 100vh;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        background: linear-gradient(135deg, #0f172a, #1e293b);
+      }
+
+      .register-card {
+        width: 100%;
+        max-width: 450px;
+        background: white;
+        padding: 35px;
+        border-radius: 15px;
+        box-shadow: 0 15px 40px rgba(0,0,0,0.25);
+      }
+
+      .logo {
+        text-align: center;
+        font-size: 28px;
+        font-weight: bold;
+        color: #2563eb;
+        margin-bottom: 10px;
+      }
+
+      .subtitle {
+        text-align: center;
+        color: #666;
+        margin-bottom: 25px;
+      }
+
+      .form-group {
+        margin-bottom: 18px;
+      }
+
+      label {
+        display: block;
+        margin-bottom: 6px;
+        font-weight: 600;
+        color: #333;
+      }
+
+      input[type="text"],
+      input[type="Stock"] {
+        width: 100%;
+        padding: 12px;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        font-size: 15px;
+      }
+
+      input:focus {
+        outline: none;
+        border-color: #2563eb;
+      }
+
+      .form-group select {
+        width: 100%;
+        padding: 10px 12px;
+        border: 1px solid #ccc;
+        border-radius: 6px;
+        background: #fff;
+        color: #333;
+        font-size: 14px;
+        cursor: pointer;
+        outline: none;
+        transition: border-color 0.2s, box-shadow 0.2s;
+      }
+
+      .form-group select:focus {
+        border-color: #007bff;
+        box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.15);
+      }
+
+      .form-group select:hover {
+        border-color: #999;
+      }
+
+      .form-group select option {
+        padding: 10px;
+      }
+
+      button {
+        width: 100%;
+        padding: 12px;
+        border: none;
+        border-radius: 8px;
+        background: #2563eb;
+        color: white;
+        font-size: 16px;
+        font-weight: bold;
+        cursor: pointer;
+        transition: .3s;
+      }
+
+      button:hover {
+        background: #1d4ed8;
+      }
+
+      .error {
+        background: #fee2e2;
+        color: #dc2626;
+        padding: 10px;
+        border-radius: 8px;
+        margin-bottom: 15px;
+        text-align: center;
+      }
+
+      .success {
+        background: #dcfce7;
+        color: #15803d;
+        padding: 10px;
+        border-radius: 8px;
+        margin-bottom: 15px;
+        text-align: center;
+      }
+
+      .footer {
+        margin-top: 20px;
+        text-align: center;
+      }
+
+      .footer a {
+        color: #2563eb;
+        text-decoration: none;
+        font-weight: bold;
+      }
+
+  body
+
+    .register-card
+
+      .logo Add Stock
+
+      .subtitle Create a new stock entry
+
+      if error
+        .error= error
+
+      if success
+        .success= success
+
+      form(method="POST" action="/add-stock")
+
+        .form-group
+         label(for="sector") Sector Name
+         select#sector(
+         name="sector"
+         required
+         )
+          option(value="" disabled selected) Select Sector
+          option(value="NIFTY BANK") NIFTY BANK
+          option(value="NIFTY IT") NIFTY IT
+          option(value="NIFTY AUTO") NIFTY AUTO
+          option(value="NIFTY PHARMA") NIFTY PHARMA
+          option(value="NIFTY REALTY") NIFTY REALTY
+          option(value="NIFTY FMCG") NIFTY FMCG
+          option(value="NIFTY METAL") NIFTY METAL
+          option(value="NIFTY ENERGY") NIFTY ENERGY
+          option(value="NIFTY PSU BANK") NIFTY PSU BANK
+          option(value="NIFTY FIN SERVICES") NIFTY FIN SERVICES
+          option(value="NIFTY 50") NIFTY 50
+
+        .form-group
+          label(for="Stock") Stock Name
+          input(
+            id="Stock"
+            type="Stock"
+            name="Stock"
+            placeholder="Enter stock name. ex: TCS.NS"
+            required
+          )
+
+        button(type="submit") Add Stock
+
+      .footer
+        a(href="/") ← Back to Dashboard
