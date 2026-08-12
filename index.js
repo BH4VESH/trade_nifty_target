@@ -324,7 +324,9 @@ app.post("/add-stock", checkAuth, async (req, res) => {
 });
 
 // Start server
-module.exports = app;
+app.listen(7000, () => {
+  console.log("Dashboard running at http://localhost:7000");
+});
 
 async function checkAuth(req, res, next) {
   if (!req.session.loggedIn) {
