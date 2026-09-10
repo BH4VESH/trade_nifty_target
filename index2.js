@@ -11,6 +11,9 @@ const yahooFinance = new YahooFinance({
 
 const sectors = [
   { sector: "NIFTY 50", symbol: "^NSEI" },
+  { sector: "NIFTY MIDCAP 50", symbol: "^NSEMDCP50" },
+  // { sector: "NIFTY MIDCAP 100", symbol: "^CNXMIDCAP" },
+  { sector: "NIFTY SMALLCAP 100", symbol: "^CNXSC" },
   { sector: "NIFTY BANK", symbol: "^NSEBANK" },
   { sector: "NIFTY IT", symbol: "^CNXIT" },
   { sector: "NIFTY AUTO", symbol: "^CNXAUTO" },
